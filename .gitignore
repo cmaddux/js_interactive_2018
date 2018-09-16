@@ -1,0 +1,6 @@
+# Credentials directories
+gke/credentials
+
+# Terraform cache
+.terraform
+terraform.tfstate*
