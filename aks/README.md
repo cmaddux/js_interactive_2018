@@ -1,6 +1,4 @@
-# AKE
-
-## Via Azure Console
+# AKS
 
 ## az
 
