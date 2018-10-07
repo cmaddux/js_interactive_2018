@@ -4,3 +4,6 @@ gke/credentials
 # Terraform cache
 .terraform
 terraform.tfstate*
+
+# Node modules
+node_modules

@@ -1,9 +1,6 @@
 data "aws_region" "current" {}
 data "aws_availability_zones" "available" {}
 
-variable "aws-account-id" {}
-variable "local-ip-address" {}
-
 data "aws_ami" "eks-worker" {
     filter {
         name   = "name"
@@ -11,7 +8,7 @@ data "aws_ami" "eks-worker" {
     }
 
     most_recent = true
-    owners      = ["${variable.aws-account-id}"] # Amazon Account ID
+    owners      = ["602401143452"]
 }
 
 resource "aws_vpc" "js-interactive-2018" {
@@ -120,15 +117,15 @@ resource "aws_security_group" "js-interactive-2018-cluster" {
 # OPTIONAL: Allow inbound traffic from your local workstation external IP
 #           to the Kubernetes. You will need to replace A.B.C.D below with
 #           your real IP. Services like icanhazip.com can help you find this.
-resource "aws_security_group_rule" "js-interactive-2018-cluster-ingress-workstation-https" {
-    cidr_blocks       = ["${variables.local-ip-address}/32"]
-    description       = "Allow workstation to communicate with the cluster API Server"
-    from_port         = 443
-    protocol          = "tcp"
-    security_group_id = "${aws_security_group.js-interactive-2018-cluster.id}"
-    to_port           = 443
-    type              = "ingress"
-}
+# resource "aws_security_group_rule" "js-interactive-2018-cluster-ingress-workstation-https" {
+#    cidr_blocks       = ["${variables.local-ip-address}/32"]
+#    description       = "Allow workstation to communicate with the cluster API Server"
+#    from_port         = 443
+#    protocol          = "tcp"
+#    security_group_id = "${aws_security_group.js-interactive-2018-cluster.id}"
+#    to_port           = 443
+#    type              = "ingress"
+# }
 
 resource "aws_eks_cluster" "js-interactive-2018" {
     name            = "${var.cluster-name}"

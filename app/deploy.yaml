@@ -1,0 +1,42 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+    name: js-interactive-app
+    namespace: js-interactive
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: js-interactive-app
+        spec:
+            containers:
+                - name: js-interactive-app
+                  image: cabmaddux/js-interactive-2018-demo:latest
+                  ports:
+                    - containerPort: 3000
+---
+kind: Service
+apiVersion: v1
+metadata:
+    name: js-interactive-app
+    namespace: js-interactive
+spec:
+    type: LoadBalancer
+    selector:
+        app: js-interactive-app
+    ports:
+        - port: 80
+          targetPort: 3000
+---
+apiVersion: v1
+kind: Secret
+metadata:
+    name: js-interactive-secrets
+    namespace: js-interactive
+type: Opaque
+data:
+    redis_host: ...
+    mysql_database: ...
+    mysql_user: ...
+    mysql_password: ...
