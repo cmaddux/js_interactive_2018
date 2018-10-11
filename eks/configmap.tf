@@ -1,3 +1,7 @@
+/**
+ * Defines terraform output for config map that allows the EKS control plane
+ * to claim EC2 nodes.
+ */
 locals {
   config-map-aws-auth = <<CONFIGMAPAWSAUTH
 apiVersion: v1

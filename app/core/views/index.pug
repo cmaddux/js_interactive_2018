@@ -3,3 +3,7 @@ extends layout
 block content
   h1= title
   p Welcome to #{title}
+  if mysqlOK
+    p Connected to mysql
+  if redisOK
+    p Connected to redis

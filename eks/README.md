@@ -32,7 +32,7 @@ If you can run `aws --version` from the command line, you're good to go. Otherwi
 
 ### AWS IAM Authenticator
 
-If you can run `aws-iam-authenticator --version` from the command line, you're good to go. Otherwise, follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/configure-kubectl.html) (Find the 'To install aws-iam-authenticator for Amazon EKS' heading) to install aws-iam-authenticator for your OS.
+If you can run `aws-iam-authenticator --help` from the command line, you're good to go. Otherwise, follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/configure-kubectl.html) (Find the 'To install aws-iam-authenticator for Amazon EKS' heading) to install aws-iam-authenticator for your OS.
 
 ### Terraform
 
@@ -40,27 +40,29 @@ If you can run `terraform --version` from the command line, you're good to go. O
 
 ### Kubectl
 
-If you can run `kubectl --version` from the command line, you're good to go. Otherwise, follow [this guide](https://kubernetes.io/docs/tasks/tools/install-kubectl/) to install kubectl for your OS and preference.
+If you can run `kubectl version` from the command line, you're good to go. Otherwise, follow [this guide](https://kubernetes.io/docs/tasks/tools/install-kubectl/) to install kubectl for your OS and preference.
 
 ## Creating the cluster
 
-1. Confirm terraform good to go (`terraform --version`)
-2. Initialize terraform (`cd eks && terraform init`)
-3. Plan (`cd eks && terraform plan`) and provide required variables
-4. Apply (`cd eks && terraform apply`) and provide required variables
+1. Initialize terraform (`cd eks && terraform init`)
+2. Plan (`cd eks && terraform plan`) and provide required variables
+3. Apply (`cd eks && terraform apply`) and provide required variables
 
 ## Connecting to the cluster
 
 1. Use the AWS CLI to update kubeconfig for cluster (`aws eks update-kubeconfig --name [CLUSTER NAME]`)
-2. Make sure to switch to the EKS cluster context `kubectl config use-context [CONTEXT NAME]`
-    1. To view all available contexts, use `kubectl config get-contexts`
-3. Make sure OK `kubectl cluster-info`
+    - The cluster name is defined [here](./variables.tf)
+    - **Note: update-kubeconfig is relatively new to AWS CLI. If you run into issues, make sure you have the most recent version (>= 1.16.27)**
+2. This should automatically switch you to EKS context, to confirn use `kubectl config current-context`
+    - If need to switch, view all available contexts with `kubectl config get-contexts`
+    - Switch to the EKS cluster context with `kubectl config use-context [CONTEXT NAME]`
+3. Make sure OK `kubectl cluster-info` and `kubectl get all`. This should show a single kuberentes service (which is your master).
 
 ## Allowing the cluster to claim worker nodes
 
-1. Create config map (`terraform ouput config-map-aws-auth > config-map-aws-auth.yaml`)
-2. Apply config map (`kubectl apply -f config-map-aws-auth.yaml`)
-3. Make sure nodes join the cluster (`kubectl get nodes --watch`)
+1. Create config map (`terraform ouput config-map-aws-auth > config-map-aws-auth.yaml`).
+2. Apply config map (`kubectl apply -f config-map-aws-auth.yaml`).
+3. Make sure nodes join the cluster (`kubectl get nodes --watch`). Wait for two nodes to show 'Ready'.
 
 ## Deploy app
 

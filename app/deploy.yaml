@@ -1,3 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+    name: js-interactive
+---
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
@@ -12,12 +17,12 @@ spec:
         spec:
             containers:
                 - name: js-interactive-app
-                  image: cabmaddux/js-interactive-2018-demo:latest
+                  image: cabmaddux/js-interactive-2018-demo:0.0.4
                   ports:
                     - containerPort: 3000
 ---
-kind: Service
 apiVersion: v1
+kind: Service
 metadata:
     name: js-interactive-app
     namespace: js-interactive
@@ -26,17 +31,131 @@ spec:
     selector:
         app: js-interactive-app
     ports:
-        - port: 80
-          targetPort: 3000
+      - protocol: TCP
+        port: 3000
+        targetPort: 3000
 ---
 apiVersion: v1
-kind: Secret
+kind: Service
 metadata:
-    name: js-interactive-secrets
+    name: mysql
     namespace: js-interactive
-type: Opaque
-data:
-    redis_host: ...
-    mysql_database: ...
-    mysql_user: ...
-    mysql_password: ...
+spec:
+    ports:
+      - port: 3306
+    selector:
+        app: mysql
+    clusterIP: None
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: mysql
+    namespace: js-interactive
+spec:
+    selector:
+        matchLabels:
+            app: mysql
+    strategy:
+        type: Recreate
+    template:
+        metadata:
+            labels:
+              app: mysql
+        spec:
+            containers:
+              - image: mysql:5.6
+                name: mysql
+                env:
+                  - name: MYSQL_ROOT_PASSWORD
+                    value: password
+                  - name: MYSQL_DATABASE
+                    value: js_interactive_2018_db
+                ports:
+                  - containerPort: 3306
+                    name: mysql
+                volumeMounts:
+                  - name: mysql-persistent-storage
+                    mountPath: /var/lib/mysql
+            volumes:
+              - name: mysql-persistent-storage
+                persistentVolumeClaim:
+                    claimName: mysql-pv-claim
+--- 
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+    name: mysql-pv-volume
+    namespace: js-interactive
+    labels:
+        type: local
+spec:
+    storageClassName: manual
+    capacity:
+        storage: 20Gi
+    accessModes:
+      - ReadWriteOnce
+    hostPath:
+        path: "/mnt/data"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: mysql-pv-claim
+    namespace: js-interactive
+spec:
+    storageClassName: manual
+    accessModes:
+        - ReadWriteOnce
+    resources:
+        requests:
+            storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: redis-master
+    namespace: js-interactive
+    labels:
+        app: redis
+spec:
+    selector:
+        matchLabels:
+            app: redis
+            role: master
+            tier: backend
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: redis
+                role: master
+                tier: backend
+        spec:
+            containers:
+              - name: master
+                image: redis:latest
+                resources:
+                    requests:
+                        cpu: 100m
+                        memory: 100Mi
+                ports:
+                  - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: redis-master
+    namespace: js-interactive
+    labels:
+        app: redis
+        role: master
+        tier: backend
+spec:
+    ports:
+      - port: 6379
+        targetPort: 6379
+    selector:
+        app: redis
+        role: master
+        tier: backend

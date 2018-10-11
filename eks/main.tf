@@ -1,6 +1,18 @@
+/**
+ * Makes available a list of AWS regions.
+ */
 data "aws_region" "current" {}
+
+/**
+ * Makes available a list of AWS availability zones.
+ */
 data "aws_availability_zones" "available" {}
 
+/**
+ * Makes available the AMI for the current AWS EKS
+ * node image. The image is maintained by AWS,
+ * so grab from list of AMIs owned by amazon.
+ */
 data "aws_ami" "eks-worker" {
     filter {
         name   = "name"
@@ -8,9 +20,22 @@ data "aws_ami" "eks-worker" {
     }
 
     most_recent = true
+
+    # Below is the account ID for AWS. Don't change this,
+    # Amazon owns and maintains the EKS node AMI.
     owners      = ["602401143452"]
 }
 
+/**
+ * Generates a new 10.0.0.0/16 VPC for our EKS cluster. If you want
+ * to add to an existing VPC, simply define the VPC ID
+ * in a variable and reference that variable where
+ * needed.
+ *
+ * However, if using an existing VPC, make sure to set
+ * the 'kubernetes.io/cluster/{cluster-name}' =
+ * 'shared' tag on that VPC.
+ */
 resource "aws_vpc" "js-interactive-2018" {
     cidr_block = "10.0.0.0/16"
 
@@ -24,6 +49,9 @@ resource "aws_vpc" "js-interactive-2018" {
 
 }
 
+/**
+ * Generates two subnets for our cluster.
+ */
 resource "aws_subnet" "js-interactive-2018" {
     count = 2
 
@@ -40,6 +68,9 @@ resource "aws_subnet" "js-interactive-2018" {
 
 }
 
+/**
+ * Generates an internet gateway for our cluster.
+ */
 resource "aws_internet_gateway" "js-interactive-2018" {
     vpc_id = "${aws_vpc.js-interactive-2018.id}"
 
@@ -49,6 +80,10 @@ resource "aws_internet_gateway" "js-interactive-2018" {
 
 }
 
+/**
+ * Sets up route table to route external traffic through the
+ * internet gateway.
+ */
 resource "aws_route_table" "js-interactive-2018" {
     vpc_id = "${aws_vpc.js-interactive-2018.id}"
 
@@ -59,6 +94,9 @@ resource "aws_route_table" "js-interactive-2018" {
 
 }
 
+/**
+ * Sets up associations between route table and subnets.
+ */
 resource "aws_route_table_association" "js-interactive-2018" {
     count = 2
 
@@ -66,6 +104,10 @@ resource "aws_route_table_association" "js-interactive-2018" {
     route_table_id = "${aws_route_table.js-interactive-2018.id}"
 }
 
+/**
+ * Generates an IAM role for and policy to allow EKS (master) to access
+ * other resources on your account.
+ */
 resource "aws_iam_role" "js-interactive-2018-cluster" {
   name = "js-interactive-2018-cluster"
 
@@ -86,16 +128,26 @@ POLICY
 
 }
 
+/**
+ * Policy attachment for role generated above.
+ */
 resource "aws_iam_role_policy_attachment" "js-interactive-2018-cluster-AmazonEKSClusterPolicy" {
     policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
     role       = "${aws_iam_role.js-interactive-2018-cluster.name}"
 }
 
+/**
+ * Policy attachment for role generated above.
+ */
 resource "aws_iam_role_policy_attachment" "js-interactive-2018-cluster-AmazonEKSServicePolicy" {
     policy_arn = "arn:aws:iam::aws:policy/AmazonEKSServicePolicy"
     role       = "${aws_iam_role.js-interactive-2018-cluster.name}"
 }
 
+/**
+ * Generates a security group to allow communication from master
+ * to worker nodes.
+ */
 resource "aws_security_group" "js-interactive-2018-cluster" {
     name        = "js-interactive-2018-cluster"
     description = "Cluster communication with worker nodes"
@@ -114,19 +166,9 @@ resource "aws_security_group" "js-interactive-2018-cluster" {
 
 }
 
-# OPTIONAL: Allow inbound traffic from your local workstation external IP
-#           to the Kubernetes. You will need to replace A.B.C.D below with
-#           your real IP. Services like icanhazip.com can help you find this.
-# resource "aws_security_group_rule" "js-interactive-2018-cluster-ingress-workstation-https" {
-#    cidr_blocks       = ["${variables.local-ip-address}/32"]
-#    description       = "Allow workstation to communicate with the cluster API Server"
-#    from_port         = 443
-#    protocol          = "tcp"
-#    security_group_id = "${aws_security_group.js-interactive-2018-cluster.id}"
-#    to_port           = 443
-#    type              = "ingress"
-# }
-
+/**
+ * Generates the EKS cluster master.
+ */
 resource "aws_eks_cluster" "js-interactive-2018" {
     name            = "${var.cluster-name}"
     role_arn        = "${aws_iam_role.js-interactive-2018-cluster.arn}"
@@ -143,6 +185,9 @@ resource "aws_eks_cluster" "js-interactive-2018" {
 
 }
 
+/**
+ * Generates an IAM role for for EKS nodes.
+ */
 resource "aws_iam_role" "js-interactive-2018-node" {
   name = "js-interactive-2018-node"
 
@@ -163,26 +208,43 @@ POLICY
 
 }
 
+/**
+ * Policy attachment for role generated above.
+ */
 resource "aws_iam_role_policy_attachment" "js-interactive-2018-node-AmazonEKSWorkerNodePolicy" {
     policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
     role       = "${aws_iam_role.js-interactive-2018-node.name}"
 }
 
+/**
+ * Policy attachment for role generated above.
+ */
 resource "aws_iam_role_policy_attachment" "js-interactive-2018-node-AmazonEKS_CNI_Policy" {
     policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
     role       = "${aws_iam_role.js-interactive-2018-node.name}"
 }
 
+/**
+ * Policy attachment for role generated above.
+ */
 resource "aws_iam_role_policy_attachment" "js-interactive-2018-node-AmazonEC2ContainerRegistryReadOnly" {
     policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
     role       = "${aws_iam_role.js-interactive-2018-node.name}"
 }
 
+/**
+ * Generates IAM instance profile allowing worker nodes to be claimed
+ * by the cluster.
+ */
 resource "aws_iam_instance_profile" "js-interactive-2018-node" {
     name = "terraform-eks-demo"
     role = "${aws_iam_role.js-interactive-2018-node.name}"
 }
 
+/**
+ * Generates a security group to allow communication from worker nodes
+ * to master.
+ */
 resource "aws_security_group" "js-interactive-2018-node" {
     name        = "js-interactive-2018-node"
     description = "Security group for all nodes in the cluster"
@@ -204,6 +266,9 @@ resource "aws_security_group" "js-interactive-2018-node" {
 
 }
 
+/**
+ * Rule allows worker nodes to communicate with each other.
+ */
 resource "aws_security_group_rule" "js-interactive-2018-node-ingress-self" {
     description              = "Allow node to communicate with each other"
     from_port                = 0
@@ -214,6 +279,9 @@ resource "aws_security_group_rule" "js-interactive-2018-node-ingress-self" {
     type                     = "ingress"
 }
 
+/**
+ * Rule allows worker nodes to communicate with cluster master.
+ */
 resource "aws_security_group_rule" "js-interactive-2018-node-ingress-cluster" {
     description              = "Allow worker Kubelets and pods to receive communication from the cluster control plane"
     from_port                = 1025
@@ -224,6 +292,9 @@ resource "aws_security_group_rule" "js-interactive-2018-node-ingress-cluster" {
     type                     = "ingress"
 }
 
+/**
+ * Rule allows worker nodes to communicate with cluster master.
+ */
 resource "aws_security_group_rule" "js-interactive-2018-cluster-ingress-node-https" {
     description              = "Allow pods to communicate with the cluster API Server"
     from_port                = 443
@@ -234,11 +305,13 @@ resource "aws_security_group_rule" "js-interactive-2018-cluster-ingress-node-htt
     type                     = "ingress"
 }
 
-# EKS currently documents this required userdata for EKS worker nodes to
-# properly configure Kubernetes applications on the EC2 instance.
-# We utilize a Terraform local here to simplify Base64 encoding this
-# information into the AutoScaling Launch Configuration.
-# More information: https://docs.aws.amazon.com/eks/latest/userguide/launch-workers.html
+/**
+ * EKS currently documents this required userdata for EKS worker nodes to
+ * properly configure Kubernetes applications on the EC2 instance.
+ * We utilize a Terraform local here to simplify Base64 encoding this
+ * information into the AutoScaling Launch Configuration.
+ * More information: https://docs.aws.amazon.com/eks/latest/userguide/launch-workers.html
+ */
 locals {
     js-interactive-2018-node-userdata = <<USERDATA
 #!/bin/bash
@@ -248,6 +321,10 @@ USERDATA
 
 }
 
+/**
+ * Launch config for autoscaling EC2 instances. This takes the place
+ * of working directly with EC2 instances.
+ */
 resource "aws_launch_configuration" "js-interactive-2018" {
     associate_public_ip_address = true
     iam_instance_profile        = "${aws_iam_instance_profile.js-interactive-2018-node.name}"
@@ -263,6 +340,9 @@ resource "aws_launch_configuration" "js-interactive-2018" {
 
 }
 
+/**
+ * Sets base for autoscaling worker nodes.
+ */
 resource "aws_autoscaling_group" "js-interactive-2018" {
     desired_capacity     = 2
     launch_configuration = "${aws_launch_configuration.js-interactive-2018.id}"
