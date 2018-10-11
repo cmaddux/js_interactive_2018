@@ -18,7 +18,7 @@ variable "gcp_zone" {
 
 variable "cluster_name" {
   description = "Name of the K8s cluster"
-  default = "js-interactive-cluster"
+  default = "js-interactive-cluster-gke"
 }
 
 variable "initial_node_count" {

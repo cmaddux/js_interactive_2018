@@ -51,14 +51,13 @@ router.get(
 
                     }),
                     new Promise(resolve => {
-                        redis.set('test_key', err => {
+                        redis.set('test_key', 1, err => {
                             if (err) {
                                 console.log(err);
                                 resolve(false);
                             }
 
                             resolve(true);
-                            redis.quit();
                         });
 
                     }),

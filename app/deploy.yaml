@@ -17,7 +17,7 @@ spec:
         spec:
             containers:
                 - name: js-interactive-app
-                  image: cabmaddux/js-interactive-2018-demo:0.0.4
+                  image: cabmaddux/js-interactive-2018-demo:0.0.7
                   ports:
                     - containerPort: 3000
 ---
@@ -32,7 +32,7 @@ spec:
         app: js-interactive-app
     ports:
       - protocol: TCP
-        port: 3000
+        port: 80
         targetPort: 3000
 ---
 apiVersion: v1

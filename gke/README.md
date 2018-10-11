@@ -6,7 +6,7 @@
 2. Go to the Kubernetes Engine page in the console
 3. Click project in top left corner
 4. Click 'New Project' in popup
-5. Enter a project name and click 'Create'
+5. Enter a project name and click 'Create'. (Remember that project name, you'll need it later)
 6. Wait for project to initialize
 7. Change to new project
 8. Wait for API and related services to be enabled (You don't have to do anything, this can take a while.)
@@ -42,3 +42,11 @@
     3. Re-source profile `source ~/.profile`
 3. Use cluster context `kubectl config use-context [CONTEXT NAME]`
 4. Make sure OK `kubectl cluster-info`
+
+## Deploy app
+
+Follow [this guide](./../app/README.md) to deploy an application to your GKE cluster.
+
+## Clean up
+
+1. Destroy all resources (`terraform destroy`).

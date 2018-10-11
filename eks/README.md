@@ -60,7 +60,7 @@ If you can run `kubectl version` from the command line, you're good to go. Other
 
 ## Allowing the cluster to claim worker nodes
 
-1. Create config map (`terraform ouput config-map-aws-auth > config-map-aws-auth.yaml`).
+1. Create config map (`terraform output config-map-aws-auth > config-map-aws-auth.yaml`).
 2. Apply config map (`kubectl apply -f config-map-aws-auth.yaml`).
 3. Make sure nodes join the cluster (`kubectl get nodes --watch`). Wait for two nodes to show 'Ready'.
 

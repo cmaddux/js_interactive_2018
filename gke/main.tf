@@ -15,6 +15,7 @@ resource "google_container_cluster" "js-interactive-cluster" {
   initial_node_count = "${var.initial_node_count}"
   enable_kubernetes_alpha = "true"
   enable_legacy_abac = "true"
+  min_master_version = "1.10.7-gke.2"
 
   node_config {
     machine_type = "${var.node_machine_type}"
